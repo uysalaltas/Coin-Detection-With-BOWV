@@ -5,9 +5,9 @@ import pickle
 
 
 def bovw_train_and_save():
-    images = bovw.load_images_from_folder('train')
+    images = bovw.load_images_from_folder('tr_dataset/train', True)
 
-    sifts = bovw.sift_features(images)
+    sifts = bovw.surf_features(images)
     descriptor_list = sifts[0]
     all_bovw_feature = sifts[1]
 
@@ -34,8 +34,8 @@ def bovw_read_train_data():
 
 
 def bovw_train_test(visual_words, train_bovw):
-    test = bovw.load_images_from_folder('test')
-    test_sifts = bovw.sift_features(test)
+    test = bovw.load_images_from_folder('tr_dataset/test', True)
+    test_sifts = bovw.surf_features(test)
     test_bovw_feature = test_sifts[1]
 
     test_bovw = bovw.image_class(test_bovw_feature, visual_words)
@@ -46,10 +46,10 @@ def bovw_train_test(visual_words, train_bovw):
 
 
 def bovw_single_test(visual_words, train_bovw):
-    test = bovw.load_images_from_folder('single test')
-    img = cv2.imread('single test/random/nh00006.jpg')
+    test = bovw.load_images_from_folder('single test', False)
+    img = cv2.imread('single test/random/4.jpg')
 
-    test_sifts = bovw.sift_features(test)
+    test_sifts = bovw.surf_features(test)
     cluster_cell_pos, cluster_cell_des, n_label = bovw.classification_of_kp(test_sifts[2], test_sifts[0])
 
     # for key, val in cluster_cell_des.items():
@@ -65,7 +65,7 @@ def bovw_single_test(visual_words, train_bovw):
 
 
 if __name__ == '__main__':
-    # bovw_train_and_save()
+    bovw_train_and_save()
     visual_words, train_bovw = bovw_read_train_data()
     # bovw_single_test(visual_words, train_bovw)
     bovw_train_test(visual_words, train_bovw)

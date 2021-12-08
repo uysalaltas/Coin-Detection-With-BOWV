@@ -27,17 +27,16 @@ def find_index(image, center):
     return ind
 
 
-def load_images_from_folder(folder):
+def load_images_from_folder(folder, reduce_size):
     images = {}
     for filename in tqdm(os.listdir(folder)):
         category = []
         path = folder + "/" + filename
         for cat in os.listdir(path):
             img = cv2.imread(path + "/" + cat, 0)
-            # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             if img is not None:
-                if img.shape[0] > 200:
-                    ratio = 200 / img.shape[0]
+                if reduce_size and img.shape[0] > 300:
+                    ratio = 300 / img.shape[0]
                     img = cv2.resize(img, (0, 0), fx=ratio, fy=ratio)
                 print(img.shape[0], " ", img.shape[1])
                 category.append(img)
@@ -71,13 +70,52 @@ def sift_features(images):
                 descriptor_list.extend(des)
                 features.append(des)
 
-            img2 = cv2.drawKeypoints(img, kp, img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-            cv2.imshow("All Clusters", img2)
-            cv2.waitKey(0)
+            # img2 = cv2.drawKeypoints(img, kp, img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+            # cv2.imshow("All Clusters", img2)
+            # cv2.waitKey(0)
 
         sift_vectors[key] = features
     print("Features extracted...")
     return [descriptor_list, sift_vectors, kp]
+
+
+def surf_features(images):
+    surf_features = {}
+    descriptor_list = []
+
+    surf = cv2.xfeatures2d.SURF_create()
+    for key, value in images.items():
+        features = []
+        for img in value:
+            kp, des = surf.detectAndCompute(img, None)
+            if des is not None:
+                descriptor_list.extend(des)
+                features.append(des)
+
+            # img2 = cv2.drawKeypoints(img, kp, img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+            # cv2.imshow("All Clusters", img2)
+            # cv2.waitKey(0)
+
+        surf_features[key] = features
+
+    return [descriptor_list, surf_features, kp]
+
+
+def orb_features(images):
+    orb_features = {}
+    descriptor_list = []
+
+    orb = cv2.ORB_create()
+    for key, value in images.items():
+        features = []
+        for img in value:
+            kp, des = orb.detectAndCompute(img, None)
+            if des is not None:
+                descriptor_list.extend(des)
+                features.append(des)
+        orb_features[key] = features
+
+    return [descriptor_list, orb_features, kp]
 
 
 def classification_of_kp(key_point, descriptor):
@@ -92,7 +130,7 @@ def classification_of_kp(key_point, descriptor):
     # Apply DBSCAN algorithm for pre classifying of cells
 
     # DBSCAN algorithm gives label for every group of feature
-    db_scan = DBSCAN(eps=0.1, min_samples=6).fit(pos_kp_scale)
+    db_scan = DBSCAN(eps=0.5, min_samples=6).fit(pos_kp_scale)
     labels = db_scan.labels_
     print(labels)
     # Appending location and label of every cell or noise to the dictionary structure
@@ -222,7 +260,7 @@ def mark_cells(img, cluster_label, label_size, keys):
 
         for y in cluster_label[x]:
             position = (int(y[0]), int(y[1]))
-            print("Pos: ", position)
+            # print("Pos: ", position)
             pos_x_list.append(int(y[0]))
             pos_y_list.append(int(y[1]))
 
@@ -235,7 +273,7 @@ def mark_cells(img, cluster_label, label_size, keys):
         pos_y_min = min(pos_y_list) - 5
         pos_y_max = max(pos_y_list) + 5
 
-        print(pos_x_max, pos_x_min, pos_y_max, pos_y_min)
+        # print(pos_x_max, pos_x_min, pos_y_max, pos_y_min)
         cv2.rectangle(cell_images[idx], (pos_x_min, pos_y_min), (pos_x_max, pos_y_max), (0, 255, 0), 2)
         cv2.putText(cell_images[idx], keys[idx], (pos_x_min, pos_y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
         cv2.putText(cell_images[idx], keys[idx], (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
@@ -249,5 +287,5 @@ def mark_cells(img, cluster_label, label_size, keys):
     cv2.imshow("All Clusters", cell_images_all_cluster)
     cv2.waitKey(0)
     cv2.imshow("All Clusters", cell_images_all_marks)
-    plt.imsave("All Clusters.png", cell_images_all_marks)
+    # plt.imsave("All Clusters.png", cell_images_all_marks)
     cv2.waitKey(0)
